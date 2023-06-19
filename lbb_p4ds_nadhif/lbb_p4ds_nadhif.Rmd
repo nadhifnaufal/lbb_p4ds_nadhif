@@ -1,0 +1,229 @@
+---
+title: "LBB p4ds"
+author: "Muhammad Nadhif Naufal"
+date: "2023-06-11"
+output: 
+  html_document :
+    number_sections: true
+    toc: true
+    theme: united
+    highlight: tango
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(
+  message = FALSE,
+  warning = FALSE,
+  fig.align = "center",
+  comment = "#>"
+)
+```
+
+# Explanation
+
+Data yang di gunakana merupakan data telemarketing dari sebuah bank di Portugal. data digunakan supaya kita dapat memprediksi calon nasabah mana yang akan membeli product ketika di dihubungin oleh pihak bank.
+
+
+# Data Preparation
+
+Pada bagian ini data akan dipersiapkan, agar lebih mudah di analisis
+
+## Creating Initial Dataframe
+
+```{r, echo=FALSE}
+bank <- read.csv2("datasets/bank-full.csv", stringsAsFactors = TRUE)
+```
+
+## Summary Data Client Bank
+> Ini adalah kolom - kolom yang ada di data bank portugal
+
++ Input variables:
+   # bank client data:
++ 1 age (numeric)
++ 2 job : type of job 
++ 3 marital : marital status 
++ 4 education : education
++ 5 default: has credit in default? 
++ 6 balance: average yearly balance, in euros 
++ 7 housing: has housing loan? 
++ 8 loan: has personal loan? 
++ related with the last contact of the current campaign:
++ 9 contact: contact communication type 
++ 10 day: last contact day of the month 
++ 11 month: last contact month of year
++ 12 duration: last contact duration, in seconds 
++ other attributes:
++ 13 campaign: number of contacts performed during this campaign and for this client 
++ 14 pdays: number of days that passed by after the client was last contacted from a previous campaign 
++ 15 previous: number of contacts performed before this campaign and for this client 
++ 16 poutcome: outcome of the previous marketing campaign 
++ Output variable (desired target):
++ 17 y has the client subscribed a term deposit? 
+  
+```{r, echo=FALSE}
+str(bank)
+```
+
+
+```{r}
+head(bank)
+```
+
+
+## Missing Value and Duplicates
+> step ini akan di cek apakah ada nilai null di semua kolom dari dataframe
+
+```{r}
+colSums(is.na(bank))
+```
+
+```{r}
+anyNA(bank)
+```
+
+- pada bagian ini kolom ke 14("pdays") akan dibuang karana tidak dibutuhkan
+```{r}
+Bank <- bank[-14]
+```
+
+
+# Data Explanation
+> Ini adalah summary singkat dari dataframe
+
+```{r, echo=FALSE}
+summary(Bank)
+```
+>Pada bagian ini akan di pisahkan antara client yang membeli product bank(yes) dan yang tidak membeli(no)
+
+```{r}
+Bankyes <-  Bank[Bank$y == "yes",]
+Bankno <-  Bank[Bank$y != "yes",]
+```
+
+```{r}
+Bankyes$y <- droplevels(Bankyes$y)
+```
+
+```{r}
+Bankno$y <- droplevels(Bankno$y)
+```
+
+
+
+>Pada bagian ini menapilkan analisis antara client yang membeli product bank dengan jenis pekerjaan client tersebut
+
+```{r}
+table(Bankyes$y, Bankyes$job)
+```
+
+
+>Dari data diatas kita bisa melihat 5 ter-atas jenis pekerjaan client yang membeli product bank
+  - management (1301)
+  - technician (840)
+  - blue-collar (708)
+  - admin (631)
+  - retired (516)
+
+
+>Pada bagian ini menapilkan analisis antara client yang membeli product bank dengan tingkat pendidikan client tersebut
+
+```{r}
+table(Bankyes$y, Bankyes$education)
+```
+
+
+
+>Dari data diatas kita bisa melihat 2 ter-atas tingkat pendidikan client yang membeli product bank
+  - secondary  (2450)
+  - tertiary (1996)
+
+
+>Pada bagian ini menapilkan analisis antara client yang membeli product bank dengan cara client tersebut dihubungi pihak bank
+
+```{r}
+table(Bankyes$y, Bankyes$contact)
+```
+
+
+
+>Dari data diatas kita bisa melihat data ter-atas cara client tersebut dihubungi pihak bank
+  - cellular  (4369)
+
+
+
+>Pada bagian ini menapilkan analisis antara client yang membeli product bank dengan tingkat usia client tersebut
+
+```{r}
+table(Bankyes$y, Bankyes$age)
+```
+```{r, echo=FALSE}
+plot(as.factor(Bankyes$age))
+```
+
+
+
+>Dari data diatas kita bisa melihat tingkat usia client yang membeli product bank paling banyak ada diantara *usia 25-43*
+
+
+# Data Manipulation & Transformation
+
+```{r}
+Bankyes$y <- sapply(Bankyes$y, switch, 
+       "yes" = 1)
+```
+
+```{r}
+str(Bankyes)
+```
+
+
+```{r}
+jobcontact <- aggregate(x = y ~ job+contact, data = Bankyes, FUN= sum)
+
+jobcontact <- jobcontact[jobcontact$contact %in% c("cellular","telephone"),]
+
+jobcontact$contact <- droplevels(jobcontact$contact)
+
+# jobcontact <- jobcontact[jobcontact$contact == "cellular" ,order(jobcontact$y, decreasing = T),]
+```
+
+```{r}
+xtabs(y~job+contact,jobcontact)
+```
+
+```{r}
+educationcontact <- aggregate(x = y ~ education+contact, data = Bankyes, FUN= sum)
+
+educationcontact <- educationcontact[educationcontact$contact %in% c("cellular","telephone"),]
+
+educationcontact$contact <- droplevels(educationcontact$contact)
+```
+
+```{r}
+xtabs(y~education+contact,educationcontact)
+```
+
+```{r}
+maritalcontact <- aggregate(x = y ~ marital+contact, data = Bankyes, FUN= sum)
+
+maritalcontact <- maritalcontact[maritalcontact$contact %in% c("cellular","telephone"),]
+
+maritalcontact$contact <- droplevels(maritalcontact$contact)
+```
+
+```{r}
+xtabs(y~marital+contact,maritalcontact)
+```
+
+# Business Recomendation
+
+Berdasarkan data yang di gunakan untuk mepromosikan sebuah produk dari sebuah bank di Portugal. dapat ditentukan calon nasabah mana yang ada kemungkinan untuk membeli product ketika di dihubungin oleh pihak bank.
+
+> Recomendations :
+
++ 1. Berdasarkan analisis data contact melalui *cellular* punya kemungkinan besar untuk menerima produk dari bank. Untuk menambah nasabah yang menerima produk dari bank sebaiknya telemarketing lebih berfokus menggunakan contact melalui *cellular*.
+
++ 2. Berdasarkan analisis data dari jenis pekerjaan, nasabah dengan perkerjaan di *management(1301)* paling banyak menerima produk dari bank, dan urutan ke-2 dan ke-3 ada jenis pekerjaan *technician(840)* dan *blue-collar(708)*.
+Untuk menambah nasabah yang menerima produk dari bank sebaiknya telemarketing berfokus untuk mencari nasabah dengan pekerjaan di *management*, dan juga mencoba menghubungi nasabah yang jenis pekerjaannya *technician* & *blue-collar* dengan target untuk menyamai dengan jumlah nasabah yang menerima produk di jenis pekerjaan *management*
+
